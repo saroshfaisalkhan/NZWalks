@@ -159,7 +159,7 @@ namespace NZWalks.API.Controllers
                 };
 
                 var updateRegion = await regionRepository.UpdateRegionAsync(id, regionToBeUpdate);
-                var region = mapper.Map<Models.Domain.Region>(updateRegion);
+                var region = mapper.Map<Models.DTO.Regions>(updateRegion);
                 return Ok(region);
             }
         }
