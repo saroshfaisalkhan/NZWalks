@@ -1,6 +1,10 @@
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using NZWalks.API.Data;
 using NZWalks.API.Repositories;
+using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +18,34 @@ builder.Services.AddControllers().AddJsonOptions(x =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddFluentValidation(options => options.RegisterValidatorsFromAssemblyContaining<Program>());
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options => options.TokenValidationParameters = new TokenValidationParameters()
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    });
+
+
+//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//    .AddJwtBearer(options => options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+//    {
+//        ValidateIssuer = true,
+//        ValidateAudience = true,
+//        ValidateLifetime = true,
+//        ValidateIssuerSigningKey = true,
+//        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+//        ValidAudience = builder.Configuration["Jwt:Audience"],
+//        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+//    });
+
+
 
 // Database context class injected
 builder.Services.AddDbContext<NZWalkDbContext>(option =>
@@ -25,6 +57,9 @@ builder.Services.AddDbContext<NZWalkDbContext>(option =>
 // Repository Injection
 builder.Services.AddScoped<IRegionRepository, SqlRegionRepository>();
 builder.Services.AddScoped<IWalkRepository, SqlWalkRepository>();
+builder.Services.AddScoped<ITokenHandlerRepository, TokenHandlerRepository>();
+builder.Services.AddSingleton<IUserRepository, StaticUserRepository>();
+
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
 var app = builder.Build();
@@ -37,6 +72,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthentication();
 
 app.UseAuthorization();
 
